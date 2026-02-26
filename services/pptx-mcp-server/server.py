@@ -86,11 +86,18 @@ def _download_blob(container: str, blob_name: str) -> bytes:
     return blob.download_blob().readall()
 
 
-def _upload_blob(container: str, blob_name: str, data: bytes, content_type: str = "application/octet-stream") -> None:
+def _upload_blob(
+    container: str,
+    blob_name: str,
+    data: bytes,
+    content_type: str = "application/octet-stream",
+) -> None:
     """Upload bytes to a blob."""
     client = get_blob_client()
     blob = client.get_blob_client(container=container, blob=blob_name)
-    blob.upload_blob(data, overwrite=True, content_settings={"content_type": content_type})
+    blob.upload_blob(
+        data, overwrite=True, content_settings={"content_type": content_type}
+    )
 
 
 # ── Tool 1: create_presentation ──────────────────────────────────────────────
@@ -123,7 +130,9 @@ def create_presentation(
         prs = Presentation(io.BytesIO(tmpl_bytes))
         logger.info("Loaded template: %s", template_name)
     except Exception:
-        logger.warning("Template '%s' not found, using blank presentation.", template_name)
+        logger.warning(
+            "Template '%s' not found, using blank presentation.", template_name
+        )
 
     # Set slide dimensions to widescreen (16:9)
     prs.slide_width = Inches(13.33)
@@ -214,6 +223,7 @@ def add_slide(
     if image_url:
         try:
             import urllib.request
+
             with urllib.request.urlopen(image_url, timeout=20) as resp:
                 img_bytes = resp.read()
             img_stream = io.BytesIO(img_bytes)
@@ -278,7 +288,11 @@ def apply_template(
     if primary_color_hex:
         hex_clean = primary_color_hex.lstrip("#")
         try:
-            r, g, b = int(hex_clean[0:2], 16), int(hex_clean[2:4], 16), int(hex_clean[4:6], 16)
+            r, g, b = (
+                int(hex_clean[0:2], 16),
+                int(hex_clean[2:4], 16),
+                int(hex_clean[4:6], 16),
+            )
             color = RGBColor(r, g, b)
             for slide in prs.slides:
                 for shape in slide.shapes:
@@ -346,7 +360,9 @@ def add_image_to_slide(
     prs = Presentation(io.BytesIO(pptx_bytes))
 
     if slide_index >= len(prs.slides):
-        return {"error": f"slide_index {slide_index} out of range (total: {len(prs.slides)})"}
+        return {
+            "error": f"slide_index {slide_index} out of range (total: {len(prs.slides)})"
+        }
 
     slide = prs.slides[slide_index]
     with urllib.request.urlopen(image_url, timeout=20) as resp:
@@ -394,9 +410,16 @@ def export_presentation(
 
     download_url = _generate_sas_url(CONTAINER_GENERATED, blob_name, expiry_hours)
     file_size_kb = round(len(pptx_bytes) / 1024, 1)
-    expiry_time = (datetime.now(timezone.utc) + timedelta(hours=expiry_hours)).isoformat()
+    expiry_time = (
+        datetime.now(timezone.utc) + timedelta(hours=expiry_hours)
+    ).isoformat()
 
-    logger.info("Exported presentation %s (%d slides, %.1f KB)", presentation_id, len(prs.slides), file_size_kb)
+    logger.info(
+        "Exported presentation %s (%d slides, %.1f KB)",
+        presentation_id,
+        len(prs.slides),
+        file_size_kb,
+    )
     return {
         "presentation_id": presentation_id,
         "download_url": download_url,
@@ -424,13 +447,18 @@ def list_templates() -> dict[str, Any]:
         for blob in container.list_blobs():
             if blob.name.endswith(".pptx"):
                 name = blob.name.replace(".pptx", "")
-                templates.append({"name": name, "size_kb": round((blob.size or 0) / 1024, 1)})
+                templates.append(
+                    {"name": name, "size_kb": round((blob.size or 0) / 1024, 1)}
+                )
     except Exception as e:
         logger.warning("Could not list templates: %s", e)
 
     # Always include built-in default
     if not any(t["name"] == "default" for t in templates):
-        templates.insert(0, {"name": "default", "size_kb": 0, "description": "Blank 16:9 presentation"})
+        templates.insert(
+            0,
+            {"name": "default", "size_kb": 0, "description": "Blank 16:9 presentation"},
+        )
 
     return {"templates": templates, "count": len(templates)}
 
@@ -513,7 +541,11 @@ def analyze_pptx_document(
                         slide_info["title"] = text_content
                     else:
                         slide_info["bullets"].extend(
-                            [line.strip() for line in text_content.split("\n") if line.strip()]
+                            [
+                                line.strip()
+                                for line in text_content.split("\n")
+                                if line.strip()
+                            ]
                         )
 
         # Speaker notes
@@ -528,7 +560,9 @@ def analyze_pptx_document(
     design_spec = {
         "slide_width_inches": slide_width_in,
         "slide_height_inches": slide_height_in,
-        "aspect_ratio": "16:9" if abs(slide_width_in / slide_height_in - 16 / 9) < 0.1 else "4:3",
+        "aspect_ratio": (
+            "16:9" if abs(slide_width_in / slide_height_in - 16 / 9) < 0.1 else "4:3"
+        ),
         "fonts_detected": sorted(fonts_found),
         "colors_detected": sorted(colors_found),
         "layouts_used": sorted(layouts_used),

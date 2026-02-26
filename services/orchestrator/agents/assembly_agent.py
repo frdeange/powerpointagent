@@ -55,7 +55,11 @@ def get_assembly_agent_config() -> dict[str, Any]:
         "instructions": ASSEMBLY_AGENT_INSTRUCTIONS,
         "model": os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o"),
         "tools": ["pptx_mcp"],
-        "pptx_mcp_allowed_tools": ["add_slide", "add_image_to_slide", "export_presentation"],
+        "pptx_mcp_allowed_tools": [
+            "add_slide",
+            "add_image_to_slide",
+            "export_presentation",
+        ],
     }
 
 

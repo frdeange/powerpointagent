@@ -52,12 +52,17 @@ def get_image_generator_config() -> dict[str, Any]:
         "instructions": IMAGE_GENERATOR_INSTRUCTIONS,
         "model": os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o"),
         "tools": ["image_mcp"],
-        "image_mcp_allowed_tools": ["generate_image", "search_stock_image", "optimize_image"],
+        "image_mcp_allowed_tools": [
+            "generate_image",
+            "search_stock_image",
+            "optimize_image",
+        ],
     }
 
 
 def build_image_generator_prompt(slides_with_prompts: list[dict[str, Any]]) -> str:
     import json
+
     slides_summary = [
         {"slide_index": s.get("slide_index"), "image_prompt": s.get("image_prompt")}
         for s in slides_with_prompts

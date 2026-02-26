@@ -55,7 +55,11 @@ def _upload_image(image_bytes: bytes, extension: str = "png") -> str:
     blob_name = f"{uuid.uuid4()}.{extension}"
     client = get_blob_client()
     blob = client.get_blob_client(container=CONTAINER_IMAGES, blob=blob_name)
-    blob.upload_blob(image_bytes, overwrite=True, content_settings={"content_type": f"image/{extension}"})
+    blob.upload_blob(
+        image_bytes,
+        overwrite=True,
+        content_settings={"content_type": f"image/{extension}"},
+    )
 
     account_key = client.credential.account_key
     sas = generate_blob_sas(
@@ -237,7 +241,11 @@ async def optimize_image(
 
     logger.info(
         "Optimized image: %dx%d → %dx%d (%.1f KB)",
-        orig_w, orig_h, final_w, final_h, len(optimized_bytes) / 1024,
+        orig_w,
+        orig_h,
+        final_w,
+        final_h,
+        len(optimized_bytes) / 1024,
     )
     return {
         "image_url": optimized_url,

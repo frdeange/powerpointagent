@@ -20,7 +20,9 @@ from azure.storage.blob import BlobServiceClient
 from models.presentation import PresentationSpec, UserRequest, PresentationStatus
 from orchestration.workflow import run_presentation_pipeline
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -65,6 +67,7 @@ async def generate_presentation(
     )
     if spec.content_outline is None:
         from models.presentation import ContentOutline
+
         spec.content_outline = ContentOutline(num_slides=request.num_slides)
 
     _jobs[spec.request_id] = {"status": "pending", "spec": spec.model_dump()}
@@ -73,7 +76,11 @@ async def generate_presentation(
 
     logger.info("Job %s queued for user %s", spec.request_id, request.user_id)
     return JSONResponse(
-        {"job_id": spec.request_id, "status": "pending", "message": "Generation started"}
+        {
+            "job_id": spec.request_id,
+            "status": "pending",
+            "message": "Generation started",
+        }
     )
 
 
@@ -125,15 +132,18 @@ async def upload_document(
     blob.upload_blob(contents, overwrite=True)
 
     logger.info("Uploaded document: %s (%d bytes)", blob_name, len(contents))
-    return JSONResponse({
-        "blob_name": blob_name,
-        "container": container,
-        "file_size_bytes": len(contents),
-        "status": "uploaded",
-    })
+    return JSONResponse(
+        {
+            "blob_name": blob_name,
+            "container": container,
+            "file_size_bytes": len(contents),
+            "status": "uploaded",
+        }
+    )
 
 
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.environ.get("PORT", "8080"))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

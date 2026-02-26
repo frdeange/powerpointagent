@@ -16,7 +16,10 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-os.environ.setdefault("AZURE_STORAGE_CONNECTION_STRING", "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net")
+os.environ.setdefault(
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net",
+)
 os.environ.setdefault("AZURE_OPENAI_DALLE_ENDPOINT", "https://test.openai.azure.com")
 os.environ.setdefault("AZURE_OPENAI_DALLE_API_KEY", "test-key")
 os.environ.setdefault("BING_SEARCH_API_KEY", "test-bing-key")
@@ -32,12 +35,15 @@ def make_test_image(width: int = 100, height: int = 100) -> bytes:
 @pytest.fixture
 def mock_upload(monkeypatch):
     """Mock blob upload to return a fake SAS URL."""
+
     def fake_upload(image_bytes: bytes, ext: str = "png") -> str:
         return f"https://test.blob.core.windows.net/images/mock-{ext}?sas=test"
+
     monkeypatch.setattr("server._upload_image", fake_upload)
 
 
 # ── Tests: generate_image ─────────────────────────────────────────────────────
+
 
 class TestGenerateImage:
     @pytest.mark.asyncio
@@ -79,13 +85,16 @@ class TestGenerateImage:
         mock_client.post = AsyncMock(return_value=mock_response)
 
         with patch("httpx.AsyncClient", return_value=mock_client):
-            result = await generate_image(prompt="test", size="1024x1024", quality="standard")
+            result = await generate_image(
+                prompt="test", size="1024x1024", quality="standard"
+            )
 
         assert result["size"] == "1024x1024"
         assert result["quality"] == "standard"
 
 
 # ── Tests: search_stock_image ─────────────────────────────────────────────────
+
 
 class TestSearchStockImage:
     @pytest.mark.asyncio
@@ -139,6 +148,7 @@ class TestSearchStockImage:
 
 
 # ── Tests: optimize_image ─────────────────────────────────────────────────────
+
 
 class TestOptimizeImage:
     @pytest.mark.asyncio

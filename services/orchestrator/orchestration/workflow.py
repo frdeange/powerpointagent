@@ -19,13 +19,34 @@ from azure.identity import DefaultAzureCredential
 from agent_framework import AzureAIProjectAgentProvider
 from agent_framework.orchestrations import WorkflowBuilder, SequentialBuilder
 
-from ..agents.content_planner import get_content_planner_config, build_content_planner_prompt
-from ..agents.content_writer import get_content_writer_config, build_content_writer_prompt
+from ..agents.content_planner import (
+    get_content_planner_config,
+    build_content_planner_prompt,
+)
+from ..agents.content_writer import (
+    get_content_writer_config,
+    build_content_writer_prompt,
+)
 from ..agents.design_agent import get_design_agent_config, build_design_agent_prompt
-from ..agents.image_generator import get_image_generator_config, build_image_generator_prompt
-from ..agents.document_analyzer import get_document_analyzer_config, build_document_analyzer_prompt
-from ..agents.assembly_agent import get_assembly_agent_config, build_assembly_agent_prompt
-from ..models.presentation import PresentationSpec, PresentationStatus, ContentOutline, DesignSpec, SlideContent
+from ..agents.image_generator import (
+    get_image_generator_config,
+    build_image_generator_prompt,
+)
+from ..agents.document_analyzer import (
+    get_document_analyzer_config,
+    build_document_analyzer_prompt,
+)
+from ..agents.assembly_agent import (
+    get_assembly_agent_config,
+    build_assembly_agent_prompt,
+)
+from ..models.presentation import (
+    PresentationSpec,
+    PresentationStatus,
+    ContentOutline,
+    DesignSpec,
+    SlideContent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,9 +114,13 @@ async def run_presentation_pipeline(spec: PresentationSpec) -> PresentationSpec:
             name="pptx-tools",
             url_env="PPTX_MCP_SERVER_URL",
             allowed_tools=[
-                "create_presentation", "add_slide", "apply_template",
-                "add_image_to_slide", "export_presentation",
-                "list_templates", "analyze_pptx_document",
+                "create_presentation",
+                "add_slide",
+                "apply_template",
+                "add_image_to_slide",
+                "export_presentation",
+                "list_templates",
+                "analyze_pptx_document",
             ],
         )
         image_mcp = _get_mcp_tool(
@@ -164,10 +189,14 @@ async def run_presentation_pipeline(spec: PresentationSpec) -> PresentationSpec:
         if doc_analysis:
             spec_dict["_document_analysis"] = doc_analysis
         planner_prompt = build_content_planner_prompt(spec_dict)
-        planner_result = await provider.run_agent(content_planner, message=planner_prompt)
+        planner_result = await provider.run_agent(
+            content_planner, message=planner_prompt
+        )
         outline_data = _parse_json(planner_result)
         spec.content_outline = ContentOutline(**outline_data)
-        logger.info("ContentPlanner: %d slides planned", len(spec.content_outline.slides))
+        logger.info(
+            "ContentPlanner: %d slides planned", len(spec.content_outline.slides)
+        )
 
         # ── Step 2: ContentWriter ─────────────────────────────────────────────
         logger.info("Running ContentWriter")
@@ -175,7 +204,9 @@ async def run_presentation_pipeline(spec: PresentationSpec) -> PresentationSpec:
         writer_result = await provider.run_agent(content_writer, message=writer_prompt)
         writer_data = _parse_json(writer_result)
         spec.content_outline = ContentOutline(**writer_data)
-        logger.info("ContentWriter: refined %d slides", len(spec.content_outline.slides))
+        logger.info(
+            "ContentWriter: refined %d slides", len(spec.content_outline.slides)
+        )
 
         # ── Step 3: Create blank presentation in Foundry (via PPTX MCP) ──────
         logger.info("Creating blank presentation via PPTX MCP")
@@ -205,10 +236,9 @@ async def run_presentation_pipeline(spec: PresentationSpec) -> PresentationSpec:
         design_result = await provider.run_agent(design_agent, message=design_prompt)
         design_data = _parse_json(design_result)
         if not spec.design_spec:
-            spec.design_spec = DesignSpec(**{
-                k: v for k, v in design_data.items()
-                if k in DesignSpec.model_fields
-            })
+            spec.design_spec = DesignSpec(
+                **{k: v for k, v in design_data.items() if k in DesignSpec.model_fields}
+            )
 
         # ── Step 5: ImageGenerator (run before assembly) ──────────────────────
         slides_list = [s.model_dump() for s in spec.content_outline.slides]
@@ -216,7 +246,9 @@ async def run_presentation_pipeline(spec: PresentationSpec) -> PresentationSpec:
         image_map: dict[str, str] = {}
 
         if slides_needing_images:
-            logger.info("Running ImageGenerator for %d slides", len(slides_needing_images))
+            logger.info(
+                "Running ImageGenerator for %d slides", len(slides_needing_images)
+            )
             img_prompt = build_image_generator_prompt(slides_needing_images)
             img_result = await provider.run_agent(image_generator, message=img_prompt)
             img_data = _parse_json(img_result)
@@ -238,7 +270,9 @@ async def run_presentation_pipeline(spec: PresentationSpec) -> PresentationSpec:
             slides=slides_list,
             design_spec=spec.design_spec.model_dump() if spec.design_spec else {},
         )
-        assembly_result = await provider.run_agent(assembly_agent, message=assembly_prompt)
+        assembly_result = await provider.run_agent(
+            assembly_agent, message=assembly_prompt
+        )
         assembly_data = _parse_json(assembly_result)
 
         spec.download_url = assembly_data.get("download_url", "")
@@ -247,7 +281,9 @@ async def run_presentation_pipeline(spec: PresentationSpec) -> PresentationSpec:
         spec.status = PresentationStatus.COMPLETED
         logger.info(
             "Pipeline complete: %s — %d slides, %.1f KB",
-            spec.request_id, spec.slide_count, spec.file_size_kb,
+            spec.request_id,
+            spec.slide_count,
+            spec.file_size_kb,
         )
 
     except Exception as exc:

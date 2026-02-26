@@ -21,11 +21,15 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Set required env vars before importing server
-os.environ.setdefault("AZURE_STORAGE_CONNECTION_STRING", "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net")
+os.environ.setdefault(
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=dGVzdA==;EndpointSuffix=core.windows.net",
+)
 os.environ.setdefault("AZURE_STORAGE_ACCOUNT_NAME", "test")
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 def make_blank_pptx() -> bytes:
     """Create a minimal PPTX in memory."""
@@ -49,28 +53,39 @@ def mock_blob_storage(monkeypatch):
             return make_blank_pptx()
         return pptx_store[key]
 
-    def fake_upload(container: str, blob_name: str, data: bytes, content_type: str = "") -> None:
+    def fake_upload(
+        container: str, blob_name: str, data: bytes, content_type: str = ""
+    ) -> None:
         pptx_store[f"{container}/{blob_name}"] = data
 
     monkeypatch.setattr("server._download_blob", fake_download)
     monkeypatch.setattr("server._upload_blob", fake_upload)
-    monkeypatch.setattr("server._generate_sas_url", lambda c, b, h=24: f"https://test.blob.core.windows.net/{c}/{b}?sas=mock")
+    monkeypatch.setattr(
+        "server._generate_sas_url",
+        lambda c, b, h=24: f"https://test.blob.core.windows.net/{c}/{b}?sas=mock",
+    )
 
     return pptx_store
 
 
 # ── Tests: create_presentation ────────────────────────────────────────────────
 
+
 class TestCreatePresentation:
     def test_creates_with_title(self, mock_blob_storage):
         from server import create_presentation
 
-        result = create_presentation(title="Test Presentation", presentation_id="test-001")
+        result = create_presentation(
+            title="Test Presentation", presentation_id="test-001"
+        )
 
         assert result["presentation_id"] == "test-001"
         assert result["status"] == "created"
         assert result["slide_count"] >= 1
-        assert "test-001.pptx" in mock_blob_storage.get("generated/test-001.pptx", b"") or True
+        assert (
+            "test-001.pptx" in mock_blob_storage.get("generated/test-001.pptx", b"")
+            or True
+        )
 
     def test_generates_uuid_if_no_id(self, mock_blob_storage):
         from server import create_presentation
@@ -87,12 +102,15 @@ class TestCreatePresentation:
     def test_falls_back_to_blank_on_missing_template(self, mock_blob_storage):
         from server import create_presentation
 
-        result = create_presentation(title="No Template", template_name="nonexistent_template")
+        result = create_presentation(
+            title="No Template", template_name="nonexistent_template"
+        )
         assert result["status"] == "created"
         assert result["template_used"] == "nonexistent_template"
 
 
 # ── Tests: add_slide ──────────────────────────────────────────────────────────
+
 
 class TestAddSlide:
     def test_add_content_slide(self, mock_blob_storage):
@@ -138,6 +156,7 @@ class TestAddSlide:
 
 # ── Tests: export_presentation ────────────────────────────────────────────────
 
+
 class TestExportPresentation:
     def test_export_returns_url(self, mock_blob_storage):
         from server import create_presentation, export_presentation
@@ -161,6 +180,7 @@ class TestExportPresentation:
 
 
 # ── Tests: analyze_pptx_document ─────────────────────────────────────────────
+
 
 class TestAnalyzePptxDocument:
     def _make_pptx_with_content(self) -> bytes:
@@ -213,6 +233,7 @@ class TestAnalyzePptxDocument:
 
 
 # ── Tests: list_templates ─────────────────────────────────────────────────────
+
 
 class TestListTemplates:
     def test_always_includes_default(self, monkeypatch):

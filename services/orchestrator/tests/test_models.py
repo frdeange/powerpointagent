@@ -8,6 +8,7 @@ import json
 import pytest
 
 import sys, os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from models.presentation import (
@@ -23,6 +24,7 @@ from models.presentation import (
 
 
 # ── Tests: PresentationSpec ───────────────────────────────────────────────────
+
 
 class TestPresentationSpec:
     def test_default_values(self):
@@ -53,6 +55,7 @@ class TestPresentationSpec:
 
 # ── Tests: ContentOutline ─────────────────────────────────────────────────────
 
+
 class TestContentOutline:
     def test_default_num_slides(self):
         outline = ContentOutline()
@@ -69,8 +72,12 @@ class TestContentOutline:
             presentation_title="AI in Healthcare",
             subtitle="Transforming Patient Care",
             slides=[
-                SlideContent(slide_index=0, title="Introduction", bullets=["Point 1", "Point 2"]),
-                SlideContent(slide_index=1, title="Key Findings", bullets=["Finding 1"]),
+                SlideContent(
+                    slide_index=0, title="Introduction", bullets=["Point 1", "Point 2"]
+                ),
+                SlideContent(
+                    slide_index=1, title="Key Findings", bullets=["Finding 1"]
+                ),
             ],
         )
         assert len(outline.slides) == 2
@@ -78,6 +85,7 @@ class TestContentOutline:
 
 
 # ── Tests: SlideContent ───────────────────────────────────────────────────────
+
 
 class TestSlideContent:
     def test_default_layout(self):
@@ -102,6 +110,7 @@ class TestSlideContent:
 
 # ── Tests: DesignSpec ─────────────────────────────────────────────────────────
 
+
 class TestDesignSpec:
     def test_default_values(self):
         ds = DesignSpec()
@@ -116,6 +125,7 @@ class TestDesignSpec:
 
 
 # ── Tests: UserRequest ────────────────────────────────────────────────────────
+
 
 class TestUserRequest:
     def test_required_fields(self):
@@ -142,6 +152,7 @@ class TestUserRequest:
 
 
 # ── Tests: workflow JSON parser ───────────────────────────────────────────────
+
 
 class TestWorkflowJsonParser:
     def test_parse_clean_json(self):

@@ -25,7 +25,7 @@ class PowerPointBotHandler(ActivityHandler):
     """
     Handles:
     - Message activities: user types a presentation request
-    - File upload (attachment): user sends a PPTX file  
+    - File upload (attachment): user sends a PPTX file
     - Conversation update: welcome message on join
     """
 
@@ -39,7 +39,9 @@ class PowerPointBotHandler(ActivityHandler):
         activity = turn_context.activity
         user_text = (activity.text or "").strip()
         user_id = activity.from_property.id if activity.from_property else "user"
-        conversation_id = activity.conversation.id if activity.conversation else "default"
+        conversation_id = (
+            activity.conversation.id if activity.conversation else "default"
+        )
 
         # ── Check for PPTX file attachment ────────────────────────────────────
         uploaded_blob = ""
@@ -73,7 +75,9 @@ class PowerPointBotHandler(ActivityHandler):
             user_text = "Analyze this presentation and create an improved version."
 
         # ── Send thinking indicator ───────────────────────────────────────────
-        await turn_context.send_activity("🔍 Researching your topic and building the presentation...")
+        await turn_context.send_activity(
+            "🔍 Researching your topic and building the presentation..."
+        )
 
         # ── Submit job to orchestrator ────────────────────────────────────────
         try:
@@ -169,7 +173,10 @@ class PowerPointBotHandler(ActivityHandler):
                 except Exception as e:
                     logger.warning("Poll error for job %s: %s", job_id, e)
 
-        return {"status": "failed", "error": "Timeout waiting for presentation generation"}
+        return {
+            "status": "failed",
+            "error": "Timeout waiting for presentation generation",
+        }
 
     async def _upload_attachment(self, attachment: Any) -> str:
         """Download attachment from Teams/DirectLine and re-upload to orchestrator."""
@@ -187,11 +194,16 @@ class PowerPointBotHandler(ActivityHandler):
 
         import io
         from aiohttp import FormData
+
         # Upload to orchestrator
         async with httpx.AsyncClient(timeout=60.0) as client:
-            files = {"file": (filename, io.BytesIO(file_bytes), "application/octet-stream")}
+            files = {
+                "file": (filename, io.BytesIO(file_bytes), "application/octet-stream")
+            }
             data = {"user_id": "bot"}
-            resp = await client.post(f"{ORCHESTRATOR_URL}/upload", files=files, data=data)
+            resp = await client.post(
+                f"{ORCHESTRATOR_URL}/upload", files=files, data=data
+            )
             resp.raise_for_status()
             result = resp.json()
 

@@ -69,7 +69,11 @@ def get_content_planner_config() -> dict[str, Any]:
 def build_content_planner_prompt(spec_dict: dict[str, Any]) -> str:
     """Build the user message to send to the ContentPlanner agent."""
     user_prompt = spec_dict.get("user_prompt", "")
-    num_slides = spec_dict.get("content_outline", {}).get("num_slides", 10) if spec_dict.get("content_outline") else 10
+    num_slides = (
+        spec_dict.get("content_outline", {}).get("num_slides", 10)
+        if spec_dict.get("content_outline")
+        else 10
+    )
 
     # If there's an uploaded document analysis, include it
     doc_analysis = spec_dict.get("_document_analysis", {})

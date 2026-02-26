@@ -1,0 +1,76 @@
+name: Create GitHub Labels
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/create-labels.yml"
+    branches:
+      - main
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  create-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create all project labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          create_label() {
+            local name="$1" color="$2" description="$3"
+            gh label create "$name" \
+              --color "$color" \
+              --description "$description" \
+              --repo "$REPO" \
+              --force
+            echo "  ✓ $name"
+          }
+
+          echo "━━━ Issue Types ━━━"
+          create_label "epic"            "7057ff" "High-level epic grouping issues"
+          create_label "feature"         "0075ca" "New feature or capability"
+          create_label "bug"             "d73a4a" "Something is not working"
+          create_label "enhancement"     "a2eeef" "Improvement to existing functionality"
+          create_label "documentation"   "0075ca" "Documentation updates"
+          create_label "testing"         "e4e669" "Tests and quality assurance"
+
+          echo "━━━ Components ━━━"
+          create_label "infra"           "c5def5" "Azure infrastructure / Bicep"
+          create_label "mcp-server"      "f9d0c4" "FastMCP server (pptx or image)"
+          create_label "pptx-mcp"        "f9d0c4" "PPTX MCP server specifically"
+          create_label "image-mcp"       "ffd8b1" "Image MCP server specifically"
+          create_label "agent"           "bfd4f2" "Foundry agent definition"
+          create_label "orchestration"   "d4c5f9" "Workflow orchestration logic"
+          create_label "bot"             "c2e0c6" "M365 Agents SDK / bot service"
+          create_label "web-ui"          "c2e0c6" "Web Chat UI (DirectLine)"
+          create_label "teams"           "c2e0c6" "Microsoft Teams channel"
+          create_label "document-upload" "fbca04" "PPTX document upload & analysis"
+          create_label "storage"         "e1d9fd" "Azure Blob Storage integration"
+          create_label "auth"            "e4e669" "Authentication & authorization"
+          create_label "ci-cd"           "c5def5" "CI/CD and GitHub Actions"
+
+          echo "━━━ Phases ━━━"
+          create_label "phase-0"         "ededed" "Phase 0: Bootstrap"
+          create_label "phase-1"         "ededed" "Phase 1: MCP Servers"
+          create_label "phase-2"         "ededed" "Phase 2: Agents & Orchestration"
+          create_label "phase-3"         "ededed" "Phase 3: Bot & Web UI"
+          create_label "phase-4"         "ededed" "Phase 4: Infra & Deployment"
+          create_label "phase-5"         "ededed" "Phase 5: Testing & Docs"
+
+          echo "━━━ Priority ━━━"
+          create_label "priority:high"   "b60205" "High priority"
+          create_label "priority:medium" "fbca04" "Medium priority"
+          create_label "priority:low"    "e4e669" "Low priority"
+
+          echo "━━━ Execution ━━━"
+          create_label "parallelizable"  "0e8a16" "Can be implemented in parallel with others"
+          create_label "sequential"      "1d76db" "Must wait for a dependency"
+          create_label "blocked"         "d73a4a" "Blocked by another issue"
+
+          echo ""
+          echo "✅ All labels created!"
