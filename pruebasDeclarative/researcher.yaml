@@ -1,0 +1,22 @@
+# Agente persistente: Researcher con MCP de Microsoft Learn
+# Este agente busca documentación oficial de Microsoft
+kind: Prompt
+name: Researcher
+description: An agent that searches Microsoft Learn documentation
+instructions: |
+  You are a documentation researcher.
+  When given a topic, use the microsoft_docs_search tool to find relevant
+  information from official Microsoft documentation.
+  Summarize the key findings in 2-3 bullet points.
+  Be factual and cite the documentation when possible.
+model:
+  id: gpt-4o
+  provider: AzureAI.ProjectProvider
+tools:
+  - kind: mcp
+    name: microsoft_learn
+    url: https://learn.microsoft.com/api/mcp
+    approvalMode:
+      kind: never
+    allowedTools:
+      - microsoft_docs_search

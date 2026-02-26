@@ -1,13 +1,17 @@
 """
-Tests for orchestrator models and workflow utilities.
+Tests for orchestrator models and YAML agent definitions.
 """
 
 from __future__ import annotations
 
 import json
-import pytest
+import os
+from pathlib import Path
 
-import sys, os
+import pytest
+import yaml
+
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -151,33 +155,106 @@ class TestUserRequest:
         assert req.uploaded_document_blob == "upload.pptx"
 
 
-# ── Tests: workflow JSON parser ───────────────────────────────────────────────
+# ── Tests: YAML Agent Definitions ─────────────────────────────────────────────
+
+AGENTS_DIR = Path(__file__).parent.parent / "agents"
+
+EXPECTED_AGENTS = [
+    "content_planner.yaml",
+    "content_writer.yaml",
+    "design_agent.yaml",
+    "image_generator.yaml",
+    "document_analyzer.yaml",
+    "assembly_agent.yaml",
+]
+
+VALID_TOOL_KINDS = {"web_search", "mcp", "file_search", "code_interpreter", "function", "openapi", "custom"}
 
 
-class TestWorkflowJsonParser:
-    def test_parse_clean_json(self):
-        from orchestration.workflow import _parse_json
+class TestYamlAgentDefinitions:
+    """Validate that all YAML agent definitions are well-formed."""
 
-        data = _parse_json('{"key": "value", "num": 42}')
-        assert data["key"] == "value"
-        assert data["num"] == 42
+    def test_all_yamls_exist(self):
+        for filename in EXPECTED_AGENTS:
+            path = AGENTS_DIR / filename
+            assert path.exists(), f"Missing YAML agent definition: {path}"
 
-    def test_parse_markdown_wrapped_json(self):
-        from orchestration.workflow import _parse_json
+    @pytest.mark.parametrize("filename", EXPECTED_AGENTS)
+    def test_yaml_is_valid(self, filename):
+        path = AGENTS_DIR / filename
+        with open(path) as f:
+            data = yaml.safe_load(f)
+        assert isinstance(data, dict), f"{filename} did not parse to a dict"
 
-        text = '```json\n{"presentation_title": "Test", "num_slides": 10}\n```'
-        data = _parse_json(text)
-        assert data["presentation_title"] == "Test"
+    @pytest.mark.parametrize("filename", EXPECTED_AGENTS)
+    def test_yaml_has_required_fields(self, filename):
+        path = AGENTS_DIR / filename
+        with open(path) as f:
+            data = yaml.safe_load(f)
+        assert data.get("kind") == "Prompt", f"{filename}: kind must be 'Prompt'"
+        assert "name" in data, f"{filename}: missing 'name'"
+        assert "instructions" in data, f"{filename}: missing 'instructions'"
+        assert "model" in data, f"{filename}: missing 'model'"
+        model = data["model"]
+        assert "id" in model, f"{filename}: model missing 'id'"
+        assert model.get("provider") == "AzureAI.ProjectProvider", (
+            f"{filename}: model.provider must be 'AzureAI.ProjectProvider'"
+        )
 
-    def test_parse_json_embedded_in_text(self):
-        from orchestration.workflow import _parse_json
+    @pytest.mark.parametrize("filename", EXPECTED_AGENTS)
+    def test_yaml_tools_are_valid(self, filename):
+        path = AGENTS_DIR / filename
+        with open(path) as f:
+            data = yaml.safe_load(f)
+        tools = data.get("tools", [])
+        for i, tool in enumerate(tools):
+            kind = tool.get("kind")
+            assert kind in VALID_TOOL_KINDS, (
+                f"{filename}: tool[{i}] has invalid kind '{kind}'"
+            )
+            if kind == "mcp":
+                assert "url" in tool, f"{filename}: MCP tool[{i}] missing 'url'"
+                assert "allowedTools" in tool, (
+                    f"{filename}: MCP tool[{i}] missing 'allowedTools'"
+                )
 
-        text = 'Here is the result:\n{"status": "ok"}\nDone.'
-        data = _parse_json(text)
-        assert data["status"] == "ok"
+    def test_content_planner_uses_web_search(self):
+        with open(AGENTS_DIR / "content_planner.yaml") as f:
+            data = yaml.safe_load(f)
+        tool_kinds = [t["kind"] for t in data.get("tools", [])]
+        assert "web_search" in tool_kinds
 
-    def test_returns_empty_on_invalid(self):
-        from orchestration.workflow import _parse_json
+    def test_content_writer_uses_web_search(self):
+        with open(AGENTS_DIR / "content_writer.yaml") as f:
+            data = yaml.safe_load(f)
+        tool_kinds = [t["kind"] for t in data.get("tools", [])]
+        assert "web_search" in tool_kinds
 
-        data = _parse_json("This is just plain text with no JSON")
-        assert data == {}
+    def test_design_agent_uses_mcp(self):
+        with open(AGENTS_DIR / "design_agent.yaml") as f:
+            data = yaml.safe_load(f)
+        mcp_tools = [t for t in data.get("tools", []) if t["kind"] == "mcp"]
+        assert len(mcp_tools) == 1
+        assert "create_presentation" in mcp_tools[0]["allowedTools"]
+
+    def test_assembly_agent_uses_mcp(self):
+        with open(AGENTS_DIR / "assembly_agent.yaml") as f:
+            data = yaml.safe_load(f)
+        mcp_tools = [t for t in data.get("tools", []) if t["kind"] == "mcp"]
+        assert len(mcp_tools) == 1
+        assert "add_slide" in mcp_tools[0]["allowedTools"]
+        assert "save_and_upload_presentation" in mcp_tools[0]["allowedTools"]
+
+    def test_document_analyzer_has_analyze_tool(self):
+        with open(AGENTS_DIR / "document_analyzer.yaml") as f:
+            data = yaml.safe_load(f)
+        mcp_tools = [t for t in data.get("tools", []) if t["kind"] == "mcp"]
+        assert len(mcp_tools) == 1
+        assert "analyze_pptx_document" in mcp_tools[0]["allowedTools"]
+
+    def test_image_generator_uses_image_mcp(self):
+        with open(AGENTS_DIR / "image_generator.yaml") as f:
+            data = yaml.safe_load(f)
+        mcp_tools = [t for t in data.get("tools", []) if t["kind"] == "mcp"]
+        assert len(mcp_tools) == 1
+        assert "generate_image" in mcp_tools[0]["allowedTools"]

@@ -1,5 +1,5 @@
 agent-framework>=1.0.0rc2
-azure-ai-projects>=1.0.0b11
+agent-framework-declarative>=1.0.0b1
 azure-identity>=1.19.0
 azure-storage-blob>=12.28.0
 pydantic>=2.10.0

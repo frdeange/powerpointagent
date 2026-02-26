@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 
 from azure.storage.blob import BlobServiceClient
 
-from models.presentation import PresentationSpec, UserRequest, PresentationStatus
+from models.presentation import UserRequest, PresentationStatus
 from orchestration.workflow import run_presentation_pipeline
 
 logging.basicConfig(
@@ -58,48 +58,46 @@ async def generate_presentation(
     Start a presentation generation job.
     Returns immediately with a job_id for polling.
     """
-    spec = PresentationSpec(
-        request_id=str(uuid.uuid4()),
-        user_prompt=request.message,
-        uploaded_document_url=request.uploaded_document_url,
-        uploaded_document_blob=request.uploaded_document_blob,
-        language=request.language,
+    job_id = str(uuid.uuid4())
+    _jobs[job_id] = {"status": "pending"}
+
+    background_tasks.add_task(
+        _run_pipeline_task,
+        job_id,
+        request.message,
+        request.uploaded_document_url or None,
     )
-    if spec.content_outline is None:
-        from models.presentation import ContentOutline
 
-        spec.content_outline = ContentOutline(num_slides=request.num_slides)
-
-    _jobs[spec.request_id] = {"status": "pending", "spec": spec.model_dump()}
-
-    background_tasks.add_task(_run_pipeline_task, spec)
-
-    logger.info("Job %s queued for user %s", spec.request_id, request.user_id)
+    logger.info("Job %s queued for user %s", job_id, request.user_id)
     return JSONResponse(
         {
-            "job_id": spec.request_id,
+            "job_id": job_id,
             "status": "pending",
             "message": "Generation started",
         }
     )
 
 
-async def _run_pipeline_task(spec: PresentationSpec) -> None:
+async def _run_pipeline_task(
+    job_id: str,
+    user_prompt: str,
+    uploaded_document_url: str | None,
+) -> None:
     """Background task: run the pipeline and update job store."""
-    _jobs[spec.request_id]["status"] = "in_progress"
+    _jobs[job_id]["status"] = "in_progress"
     try:
-        result = await run_presentation_pipeline(spec)
-        _jobs[spec.request_id] = {
-            "status": result.status.value,
-            "download_url": result.download_url,
-            "slide_count": result.slide_count,
-            "file_size_kb": result.file_size_kb,
-            "presentation_id": result.presentation_id,
-            "error": result.error,
+        result = await run_presentation_pipeline(
+            user_prompt=user_prompt,
+            uploaded_document_url=uploaded_document_url,
+        )
+        _jobs[job_id] = {
+            "status": "completed",
+            "state": result.get("state", ""),
+            "agent_outputs": result.get("agent_outputs", []),
         }
     except Exception as exc:
-        logger.exception("Pipeline task failed for %s", spec.request_id)
-        _jobs[spec.request_id] = {"status": "failed", "error": str(exc)}
+        logger.exception("Pipeline task failed for %s", job_id)
+        _jobs[job_id] = {"status": "failed", "error": str(exc)}
 
 
 @app.get("/jobs/{job_id}")
