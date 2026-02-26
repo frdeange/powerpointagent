@@ -92,7 +92,13 @@ async def run_presentation_pipeline(
         )
         await exit_stack.enter_async_context(provider)
 
-        factory = AgentFactory()
+        factory = AgentFactory(
+            client_kwargs={
+                "credential": credential,
+                "project_endpoint": endpoint,
+                "model": model,
+            }
+        )
 
         # ── Determine which agents we need ────────────────────────────────────
         has_document = bool(uploaded_document_url)
