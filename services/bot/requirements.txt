@@ -1,8 +1,5 @@
 microsoft-agents-hosting-aiohttp>=0.8.0
-microsoft-agents-builder>=0.8.0
-microsoft-agents-core>=0.8.0
-microsoft-agents-authentication>=0.8.0
-microsoft-agents-storage>=0.8.0
+agent-framework>=1.0.0rc2
 aiohttp>=3.11.0
 httpx>=0.28.0
 azure-storage-blob>=12.28.0

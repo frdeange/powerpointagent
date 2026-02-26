@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerPoint Agent</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f3f4f6; color: #1f2937; min-height: 100vh; }
+
+        .header { background: linear-gradient(135deg, #0078d4, #005a9e); color: white; padding: 2rem; text-align: center; }
+        .header h1 { font-size: 1.8rem; font-weight: 600; }
+        .header p { opacity: 0.85; margin-top: 0.5rem; }
+
+        .container { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 2rem; margin-bottom: 1.5rem; }
+        .card h2 { font-size: 1.2rem; margin-bottom: 1rem; color: #0078d4; }
+
+        label { display: block; font-weight: 500; margin-bottom: 0.3rem; margin-top: 1rem; font-size: 0.9rem; }
+        textarea, input, select { width: 100%; padding: 0.7rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; font-family: inherit; }
+        textarea { resize: vertical; min-height: 100px; }
+        textarea:focus, input:focus, select:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 3px rgba(0,120,212,0.15); }
+
+        .row { display: flex; gap: 1rem; }
+        .row > * { flex: 1; }
+
+        .btn { display: inline-block; padding: 0.8rem 2rem; background: #0078d4; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 1.5rem; width: 100%; transition: background 0.2s; }
+        .btn:hover { background: #005a9e; }
+        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        /* Progress */
+        .progress { display: none; margin-top: 1.5rem; }
+        .progress.active { display: block; }
+        .progress-bar { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #0078d4, #00b4d8); border-radius: 3px; animation: progress-indeterminate 1.5s infinite; width: 30%; }
+        @keyframes progress-indeterminate { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+        .progress-text { margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280; text-align: center; }
+
+        /* Result */
+        .result { display: none; margin-top: 1.5rem; }
+        .result.active { display: block; }
+        .result-success { background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 1.5rem; text-align: center; }
+        .result-success h3 { color: #065f46; margin-bottom: 0.5rem; }
+        .result-success a { display: inline-block; margin-top: 1rem; padding: 0.6rem 1.5rem; background: #059669; color: white; border-radius: 8px; text-decoration: none; font-weight: 600; }
+        .result-success a:hover { background: #047857; }
+        .result-error { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 1.5rem; }
+        .result-error h3 { color: #991b1b; }
+        .result-error pre { margin-top: 0.5rem; font-size: 0.8rem; color: #7f1d1d; white-space: pre-wrap; word-break: break-all; }
+
+        .log { margin-top: 1rem; background: #1f2937; color: #d1d5db; border-radius: 8px; padding: 1rem; font-family: 'Cascadia Code', monospace; font-size: 0.8rem; max-height: 300px; overflow-y: auto; display: none; }
+        .log.active { display: block; }
+        .log-line { margin-bottom: 0.3rem; }
+        .log-line .agent { color: #60a5fa; }
+        .log-line .time { color: #6b7280; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PowerPoint Agent</h1>
+        <p>Multi-agent AI presentation generator</p>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Create a Presentation</h2>
+            <form id="genForm">
+                <label for="message">What should the presentation be about?</label>
+                <textarea id="message" placeholder="e.g. Create a presentation about Azure AI Foundry for developers. Cover key features, architecture, and a getting started guide." required></textarea>
+
+                <div class="row">
+                    <div>
+                        <label for="numSlides">Number of slides</label>
+                        <select id="numSlides">
+                            <option value="5">5 slides</option>
+                            <option value="8">8 slides</option>
+                            <option value="10" selected>10 slides</option>
+                            <option value="15">15 slides</option>
+                            <option value="20">20 slides</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="template">Template</label>
+                        <select id="template">
+                            <option value="default">Default</option>
+                            <option value="corporate_blue">Corporate Blue</option>
+                            <option value="minimal_white">Minimal White</option>
+                            <option value="dark_modern">Dark Modern</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">Generate Presentation</button>
+            </form>
+
+            <div class="progress" id="progress">
+                <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                <div class="progress-text" id="progressText">Starting generation pipeline...</div>
+            </div>
+
+            <div class="log" id="log"></div>
+
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('genForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const progress = document.getElementById('progress');
+        const progressText = document.getElementById('progressText');
+        const resultDiv = document.getElementById('result');
+        const logDiv = document.getElementById('log');
+
+        function addLog(msg, agent = '') {
+            logDiv.classList.add('active');
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            line.innerHTML = `<span class="time">[${time}]</span> ${agent ? `<span class="agent">${agent}:</span> ` : ''}${msg}`;
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function pollJob(jobId) {
+            const stages = [
+                'Creating agents in Azure AI Foundry...',
+                'ContentPlanner is researching your topic...',
+                'ContentWriter is crafting slide content...',
+                'DesignAgent & ImageGenerator working in parallel...',
+                'AssemblyAgent is building the final PPTX...',
+                'Finalizing presentation...',
+            ];
+            let stageIdx = 0;
+
+            while (true) {
+                await new Promise(r => setTimeout(r, 3000));
+                try {
+                    const resp = await fetch(`/api/jobs/${jobId}`);
+                    const data = await resp.json();
+
+                    if (data.status === 'completed') {
+                        progress.classList.remove('active');
+                        resultDiv.classList.add('active');
+
+                        // Try to extract download URL from agent outputs
+                        let downloadUrl = '';
+                        if (data.agent_outputs) {
+                            for (const out of data.agent_outputs) {
+                                const match = out.text?.match(/https?:\/\/[^\s"]+\.pptx[^\s"]*/);
+                                if (match) { downloadUrl = match[0]; break; }
+                                try {
+                                    const parsed = JSON.parse(out.text);
+                                    if (parsed.download_url) { downloadUrl = parsed.download_url; break; }
+                                } catch {}
+                            }
+                        }
+
+                        if (downloadUrl) {
+                            resultDiv.innerHTML = `<div class="result-success"><h3>Presentation Ready!</h3><p>Your presentation has been generated successfully.</p><a href="${downloadUrl}" target="_blank">Download PPTX</a></div>`;
+                        } else {
+                            resultDiv.innerHTML = `<div class="result-success"><h3>Pipeline Complete!</h3><p>State: ${data.state || 'completed'}</p><pre>${JSON.stringify(data.agent_outputs || data, null, 2).slice(0, 2000)}</pre></div>`;
+                        }
+                        addLog('Pipeline completed!', 'System');
+                        return;
+                    } else if (data.status === 'failed') {
+                        progress.classList.remove('active');
+                        resultDiv.classList.add('active');
+                        resultDiv.innerHTML = `<div class="result-error"><h3>Generation Failed</h3><pre>${data.error || JSON.stringify(data)}</pre></div>`;
+                        addLog(`Failed: ${data.error}`, 'Error');
+                        return;
+                    } else {
+                        // Still in progress
+                        if (stageIdx < stages.length) {
+                            progressText.textContent = stages[stageIdx];
+                            addLog(stages[stageIdx], 'Pipeline');
+                            stageIdx++;
+                        }
+                    }
+                } catch (err) {
+                    addLog(`Poll error: ${err.message}`, 'Error');
+                }
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            resultDiv.classList.remove('active');
+            resultDiv.innerHTML = '';
+            logDiv.innerHTML = '';
+            progress.classList.add('active');
+            progressText.textContent = 'Submitting request...';
+            addLog('Sending generation request...', 'System');
+
+            const formData = new FormData();
+            formData.append('message', document.getElementById('message').value);
+            formData.append('num_slides', document.getElementById('numSlides').value);
+            formData.append('template_name', document.getElementById('template').value);
+
+            try {
+                const resp = await fetch('/api/generate', { method: 'POST', body: formData });
+                const data = await resp.json();
+
+                if (data.job_id) {
+                    addLog(`Job queued: ${data.job_id}`, 'System');
+                    progressText.textContent = 'Job queued, starting pipeline...';
+                    await pollJob(data.job_id);
+                } else {
+                    throw new Error(JSON.stringify(data));
+                }
+            } catch (err) {
+                progress.classList.remove('active');
+                resultDiv.classList.add('active');
+                resultDiv.innerHTML = `<div class="result-error"><h3>Request Failed</h3><pre>${err.message}</pre></div>`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

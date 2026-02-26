@@ -3,32 +3,46 @@
 // Build strategy: images built via `az acr build` (ACR Tasks) — no local Docker needed.
 {
 	"name": "PowerPoint Agent — Python 3.13",
-	"image": "mcr.microsoft.com/devcontainers/python:2-3.13-bookworm",
-
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
 	// ── DevContainer Features ──────────────────────────────────────────────────
-	// NOTE: No Docker feature needed — container images are built remotely via
-	//       ACR Tasks (`az acr build`). Services run as plain Python processes
-	//       during local development.
+	// Docker-in-Docker is used to build and push container images to ACR locally.
 	"features": {
 		"ghcr.io/devcontainers/features/azure-cli:1": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
 		"ghcr.io/rchaganti/vsc-devcontainer-features/azurebicep:1": {},
 		"ghcr.io/azure/azure-dev/azd:0": {},
 		"ghcr.io/devcontainers-extra/features/node-asdf:0": {}
 	},
-
 	// ── Port forwarding for local development ─────────────────────────────────
-	"forwardPorts": [3978, 8000, 8001, 8002],
+	"forwardPorts": [
+		3978,
+		8000,
+		8001,
+		8002
+	],
 	"portsAttributes": {
-		"3978": { "label": "Bot Service (aiohttp)", "onAutoForward": "notify" },
-		"8000": { "label": "Orchestrator", "onAutoForward": "notify" },
-		"8001": { "label": "PPTX MCP Server", "onAutoForward": "notify" },
-		"8002": { "label": "Image MCP Server", "onAutoForward": "notify" }
+		"3978": {
+			"label": "Bot Service (aiohttp)",
+			"onAutoForward": "notify"
+		},
+		"8000": {
+			"label": "Orchestrator",
+			"onAutoForward": "notify"
+		},
+		"8001": {
+			"label": "PPTX MCP Server",
+			"onAutoForward": "notify"
+		},
+		"8002": {
+			"label": "Image MCP Server",
+			"onAutoForward": "notify"
+		}
 	},
-
 	// ── Post-create setup ──────────────────────────────────────────────────────
 	"postCreateCommand": "bash .devcontainer/post-create.sh",
-
 	// ── VS Code customizations ─────────────────────────────────────────────────
 	"customizations": {
 		"vscode": {
@@ -56,7 +70,9 @@
 				"[python]": {
 					"editor.defaultFormatter": "ms-python.black-formatter"
 				},
-				"editor.rulers": [100]
+				"editor.rulers": [
+					100
+				]
 			}
 		}
 	}

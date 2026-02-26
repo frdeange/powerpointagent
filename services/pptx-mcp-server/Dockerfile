@@ -16,9 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8001
 
-ENV PORT=8000
+ENV PORT=8001
 
 # FastMCP stateless_http runs via uvicorn internally
 CMD ["python", "server.py"]

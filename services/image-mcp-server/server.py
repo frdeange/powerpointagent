@@ -14,8 +14,6 @@ from typing import Any
 
 import httpx
 from fastmcp import FastMCP
-from starlette.requests import Request
-from starlette.responses import JSONResponse
 from PIL import Image
 
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
@@ -23,6 +21,7 @@ from datetime import datetime, timedelta, timezone
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # ── FastMCP setup ─────────────────────────────────────────────────────────────
 mcp = FastMCP(
@@ -256,13 +255,15 @@ async def optimize_image(
     }
 
 
-# ── Health check ──────────────────────────────────────────────────────────────
-@mcp.custom_route("/health", methods=["GET"])
-async def health(_request: Request) -> JSONResponse:
-    return JSONResponse({"status": "ok", "service": "image-mcp-server", "tools": 3})
-
-
 # ── Entry point ───────────────────────────────────────────────────────────────
+def run_http(host: str = "0.0.0.0", port: int = 8002) -> None:
+    """Run in HTTP mode for cloud deployment (AI Foundry compatible)."""
+    import uvicorn
+
+    app = mcp.http_app(stateless_http=True)
+    uvicorn.run(app, host=host, port=port)
+
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "8001"))
-    mcp.run(transport="http", host="0.0.0.0", port=port, stateless_http=True)
+    port = int(os.environ.get("PORT", "8002"))
+    run_http(port=port)

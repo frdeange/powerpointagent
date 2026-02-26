@@ -14,8 +14,6 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
-from starlette.requests import Request
-from starlette.responses import JSONResponse
 
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from datetime import datetime, timedelta, timezone
@@ -28,6 +26,7 @@ import pptx.oxml.ns as nsmap
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # ── FastMCP setup ────────────────────────────────────────────────────────────
 mcp = FastMCP(
@@ -594,13 +593,15 @@ def _count_layouts(prs: Presentation) -> dict[str, int]:
     return counts
 
 
-# ── Health check ─────────────────────────────────────────────────────────────
-@mcp.custom_route("/health", methods=["GET"])
-async def health(_request: Request) -> JSONResponse:
-    return JSONResponse({"status": "ok", "service": "pptx-mcp-server", "tools": 7})
-
-
 # ── Entry point ───────────────────────────────────────────────────────────────
+def run_http(host: str = "0.0.0.0", port: int = 8001) -> None:
+    """Run in HTTP mode for cloud deployment (AI Foundry compatible)."""
+    import uvicorn
+
+    app = mcp.http_app(stateless_http=True)
+    uvicorn.run(app, host=host, port=port)
+
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "8000"))
-    mcp.run(transport="http", host="0.0.0.0", port=port, stateless_http=True)
+    port = int(os.environ.get("PORT", "8001"))
+    run_http(port=port)

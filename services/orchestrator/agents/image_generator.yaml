@@ -36,7 +36,7 @@ model:
 tools:
   - kind: mcp
     name: image_tools
-    url: ${IMAGE_MCP_SERVER_URL}
+    url: https://pptcreator-acamcp-image.mangocoast-3452809f.swedencentral.azurecontainerapps.io/mcp
     approvalMode:
       kind: never
     allowedTools:

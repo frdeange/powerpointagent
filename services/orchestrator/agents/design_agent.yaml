@@ -38,7 +38,7 @@ model:
 tools:
   - kind: mcp
     name: pptx_tools
-    url: ${PPTX_MCP_SERVER_URL}
+    url: https://pptcreator-acamcp-pptx.mangocoast-3452809f.swedencentral.azurecontainerapps.io/mcp
     approvalMode:
       kind: never
     allowedTools:
