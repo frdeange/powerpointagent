@@ -168,7 +168,15 @@ EXPECTED_AGENTS = [
     "assembly_agent.yaml",
 ]
 
-VALID_TOOL_KINDS = {"web_search", "mcp", "file_search", "code_interpreter", "function", "openapi", "custom"}
+VALID_TOOL_KINDS = {
+    "web_search",
+    "mcp",
+    "file_search",
+    "code_interpreter",
+    "function",
+    "openapi",
+    "custom",
+}
 
 
 class TestYamlAgentDefinitions:
@@ -197,9 +205,9 @@ class TestYamlAgentDefinitions:
         assert "model" in data, f"{filename}: missing 'model'"
         model = data["model"]
         assert "id" in model, f"{filename}: model missing 'id'"
-        assert model.get("provider") == "AzureAI.ProjectProvider", (
-            f"{filename}: model.provider must be 'AzureAI.ProjectProvider'"
-        )
+        assert (
+            model.get("provider") == "AzureAI.ProjectProvider"
+        ), f"{filename}: model.provider must be 'AzureAI.ProjectProvider'"
 
     @pytest.mark.parametrize("filename", EXPECTED_AGENTS)
     def test_yaml_tools_are_valid(self, filename):
@@ -209,14 +217,14 @@ class TestYamlAgentDefinitions:
         tools = data.get("tools", [])
         for i, tool in enumerate(tools):
             kind = tool.get("kind")
-            assert kind in VALID_TOOL_KINDS, (
-                f"{filename}: tool[{i}] has invalid kind '{kind}'"
-            )
+            assert (
+                kind in VALID_TOOL_KINDS
+            ), f"{filename}: tool[{i}] has invalid kind '{kind}'"
             if kind == "mcp":
                 assert "url" in tool, f"{filename}: MCP tool[{i}] missing 'url'"
-                assert "allowedTools" in tool, (
-                    f"{filename}: MCP tool[{i}] missing 'allowedTools'"
-                )
+                assert (
+                    "allowedTools" in tool
+                ), f"{filename}: MCP tool[{i}] missing 'allowedTools'"
 
     def test_content_planner_uses_web_search(self):
         with open(AGENTS_DIR / "content_planner.yaml") as f:

@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
-from fastmcp.server.middleware import RateLimitMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -39,7 +38,6 @@ mcp = FastMCP(
         "Always call create_presentation first, then add_slide for each slide, "
         "and finally export_presentation to get the download URL."
     ),
-    stateless_http=True,
 )
 
 # ── Azure Storage client ─────────────────────────────────────────────────────
@@ -605,4 +603,4 @@ async def health(_request: Request) -> JSONResponse:
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))
-    mcp.run(transport="http", host="0.0.0.0", port=port)
+    mcp.run(transport="http", host="0.0.0.0", port=port, stateless_http=True)

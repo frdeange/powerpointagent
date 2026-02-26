@@ -32,7 +32,6 @@ mcp = FastMCP(
         "and optimize/resize images for PowerPoint slides. "
         "All images are stored in Azure Blob Storage and returned as SAS URLs."
     ),
-    stateless_http=True,
 )
 
 # ── Azure Storage ─────────────────────────────────────────────────────────────
@@ -266,4 +265,4 @@ async def health(_request: Request) -> JSONResponse:
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8001"))
-    mcp.run(transport="http", host="0.0.0.0", port=port)
+    mcp.run(transport="http", host="0.0.0.0", port=port, stateless_http=True)
