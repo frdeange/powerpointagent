@@ -1,26 +1,63 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/python
+// For format details, see https://aka.ms/devcontainer.json
+// Project: PowerPoint Agent — Multi-Agent PPTX Generator
+// Build strategy: images built via `az acr build` (ACR Tasks) — no local Docker needed.
 {
-	"name": "Python 3",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"name": "PowerPoint Agent — Python 3.13",
 	"image": "mcr.microsoft.com/devcontainers/python:2-3.13-bookworm",
+
+	// ── DevContainer Features ──────────────────────────────────────────────────
+	// NOTE: No Docker feature needed — container images are built remotely via
+	//       ACR Tasks (`az acr build`). Services run as plain Python processes
+	//       during local development.
 	"features": {
 		"ghcr.io/devcontainers/features/azure-cli:1": {},
-		"ghcr.io/devcontainers/features/github-cli:1": {}
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/rchaganti/vsc-devcontainer-features/azurebicep:1": {},
+		"ghcr.io/azure/azure-dev/azd:0": {},
+		"ghcr.io/devcontainers-extra/features/node-asdf:0": {}
+	},
+
+	// ── Port forwarding for local development ─────────────────────────────────
+	"forwardPorts": [3978, 8000, 8001, 8002],
+	"portsAttributes": {
+		"3978": { "label": "Bot Service (aiohttp)", "onAutoForward": "notify" },
+		"8000": { "label": "Orchestrator", "onAutoForward": "notify" },
+		"8001": { "label": "PPTX MCP Server", "onAutoForward": "notify" },
+		"8002": { "label": "Image MCP Server", "onAutoForward": "notify" }
+	},
+
+	// ── Post-create setup ──────────────────────────────────────────────────────
+	"postCreateCommand": "bash .devcontainer/post-create.sh",
+
+	// ── VS Code customizations ─────────────────────────────────────────────────
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				// Python
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-python.debugpy",
+				"ms-python.black-formatter",
+				// Azure
+				"ms-azuretools.vscode-bicep",
+				"ms-azuretools.vscode-azurecontainerapps",
+				"ms-vscode.azurecli",
+				// GitHub
+				"GitHub.vscode-pull-request-github",
+				"GitHub.copilot",
+				// Other
+				"redhat.vscode-yaml",
+				"ms-vscode.makefile-tools"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.analysis.typeCheckingMode": "basic",
+				"editor.formatOnSave": true,
+				"[python]": {
+					"editor.defaultFormatter": "ms-python.black-formatter"
+				},
+				"editor.rulers": [100]
+			}
+		}
 	}
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "pip3 install --user -r requirements.txt",
-
-	// Configure tool-specific properties.
-	// "customizations": {},
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
 }
