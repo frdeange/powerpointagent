@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = [
+    "services/pptx-mcp-server/tests",
+    "services/image-mcp-server/tests",
+    "services/orchestrator/tests",
+]

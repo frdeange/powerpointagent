@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PowerPoint Agent</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f3f2f1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────────────── */
+    header {
+      background: #0078D4;
+      color: white;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+
+    header .logo {
+      font-size: 28px;
+    }
+
+    header .title-group h1 {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    header .title-group p {
+      font-size: 12px;
+      opacity: 0.85;
+    }
+
+    header .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #6fcf97;
+      margin-left: auto;
+      box-shadow: 0 0 6px #6fcf97;
+    }
+
+    /* ── Hints bar ───────────────────────────────────────────────────────── */
+    .hints-bar {
+      background: white;
+      border-bottom: 1px solid #e1dfdd;
+      padding: 8px 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .hint-chip {
+      background: #f3f2f1;
+      border: 1px solid #c8c6c4;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #323130;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .hint-chip:hover {
+      background: #edebe9;
+      border-color: #0078D4;
+      color: #0078D4;
+    }
+
+    /* ── Chat container ──────────────────────────────────────────────────── */
+    #webchat-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Upload area ─────────────────────────────────────────────────────── */
+    .upload-area {
+      background: white;
+      border-top: 1px solid #e1dfdd;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #605e5c;
+      flex-shrink: 0;
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f3f2f1;
+      border: 1px dashed #c8c6c4;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #323130;
+      transition: all 0.15s;
+    }
+
+    .upload-btn:hover {
+      background: #edebe9;
+      border-color: #0078D4;
+      color: #0078D4;
+    }
+
+    .upload-btn input {
+      display: none;
+    }
+
+    #upload-status {
+      font-size: 12px;
+      color: #0078D4;
+    }
+
+    /* ── Loading overlay ─────────────────────────────────────────────────── */
+    #loading {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+
+    #loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e1dfdd;
+      border-top-color: #0078D4;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading p { font-size: 14px; color: #605e5c; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <span class="logo">🎯</span>
+    <div class="title-group">
+      <h1>PowerPoint Agent</h1>
+      <p>AI-powered presentation generator</p>
+    </div>
+    <div class="status-dot" id="status-dot" title="Connecting..."></div>
+  </header>
+
+  <!-- Quick hint chips -->
+  <div class="hints-bar">
+    <span class="hint-chip" onclick="sendHint(this)">📊 Create a sales pitch deck (10 slides)</span>
+    <span class="hint-chip" onclick="sendHint(this)">🚀 Product launch presentation for investors</span>
+    <span class="hint-chip" onclick="sendHint(this)">📈 Q1 business review for senior leadership</span>
+    <span class="hint-chip" onclick="sendHint(this)">🌍 Sustainability report for stakeholders</span>
+    <span class="hint-chip" onclick="sendHint(this)">🤖 Introduction to Azure AI Foundry</span>
+  </div>
+
+  <!-- Web Chat iframe container -->
+  <div id="webchat-container">
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>Connecting to PowerPoint Agent...</p>
+    </div>
+  </div>
+
+  <!-- File upload bar -->
+  <div class="upload-area">
+    <label class="upload-btn">
+      📎 Upload existing PPTX
+      <input type="file" id="pptx-upload" accept=".pptx" onchange="handleUpload(event)" />
+    </label>
+    <span id="upload-status"></span>
+    <span style="margin-left:auto; font-size:11px; color:#a19f9d;">
+      Upload a presentation to use as a starting point
+    </span>
+  </div>
+
+  <!-- Bot Framework Web Chat SDK -->
+  <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
+
+  <script>
+    // ── Configuration ─────────────────────────────────────────────────────────
+    // These are injected by the server or set via environment
+    const BOT_DIRECTLINE_SECRET = window.__DIRECTLINE_SECRET__ || '';
+    const BOT_SERVICE_URL = window.__BOT_SERVICE_URL__ || '/api/directline';
+
+    let webChatStore = null;
+    let uploadedBlobName = '';
+
+    // ── Initialize Web Chat ───────────────────────────────────────────────────
+    async function initWebChat() {
+      try {
+        let directLine;
+
+        if (BOT_DIRECTLINE_SECRET) {
+          // Production: use DirectLine secret to get a token
+          const tokenRes = await fetch(`${BOT_SERVICE_URL}/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ secret: BOT_DIRECTLINE_SECRET })
+          });
+          const { token } = await tokenRes.json();
+          directLine = window.WebChat.createDirectLine({ token });
+        } else {
+          // Dev: fetch token from bot service proxy
+          const tokenRes = await fetch('/api/directline/token');
+          if (tokenRes.ok) {
+            const { token } = await tokenRes.json();
+            directLine = window.WebChat.createDirectLine({ token });
+          } else {
+            throw new Error('Could not get DirectLine token. Check bot configuration.');
+          }
+        }
+
+        webChatStore = window.WebChat.createStore({}, ({ dispatch }) => next => action => {
+          if (action.type === 'DIRECT_LINE/CONNECT_FULFILLED') {
+            document.getElementById('status-dot').style.background = '#6fcf97';
+            document.getElementById('status-dot').title = 'Connected';
+            document.getElementById('loading').style.display = 'none';
+          }
+          if (action.type === 'DIRECT_LINE/DISCONNECT_FULFILLED') {
+            document.getElementById('status-dot').style.background = '#eb5757';
+            document.getElementById('status-dot').title = 'Disconnected';
+          }
+          return next(action);
+        });
+
+        window.WebChat.renderWebChat(
+          {
+            directLine,
+            store: webChatStore,
+            userID: 'webchat-user-' + Math.random().toString(36).substr(2, 9),
+            username: 'You',
+            locale: 'en-US',
+            styleOptions: {
+              botAvatarInitials: '🤖',
+              userAvatarInitials: '👤',
+              accent: '#0078D4',
+              bubbleBackground: '#ffffff',
+              bubbleBorderRadius: 8,
+              bubbleFromUserBackground: '#0078D4',
+              bubbleFromUserBorderRadius: 8,
+              bubbleFromUserTextColor: '#ffffff',
+              botAvatarBackgroundColor: '#0078D4',
+              userAvatarBackgroundColor: '#605e5c',
+              sendBoxBackground: '#f3f2f1',
+              sendBoxBorderTop: '1px solid #e1dfdd',
+              fontSizeSmall: '12px',
+              primaryFont: "'Segoe UI', Tahoma, sans-serif",
+              markdownRespectCRLF: true,
+            },
+          },
+          document.getElementById('webchat-container')
+        );
+
+      } catch (err) {
+        document.getElementById('loading').innerHTML = `
+          <p style="color:#eb5757; text-align:center; padding:24px;">
+            ⚠️ Could not connect to the bot.<br>
+            <small>${err.message}</small>
+          </p>`;
+        console.error('WebChat init error:', err);
+      }
+    }
+
+    // ── Send a hint chip message ───────────────────────────────────────────────
+    function sendHint(element) {
+      if (!webChatStore) return;
+      const text = element.textContent.replace(/^[^\s]+ /, '').trim(); // strip emoji prefix
+      webChatStore.dispatch({
+        type: 'WEB_CHAT/SEND_MESSAGE',
+        payload: { text }
+      });
+    }
+
+    // ── Handle PPTX upload ─────────────────────────────────────────────────────
+    async function handleUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('upload-status');
+      statusEl.textContent = `⏳ Uploading ${file.name}...`;
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('user_id', 'webchat-user');
+
+        const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
+        const data = await resp.json();
+
+        uploadedBlobName = data.blob_name;
+        statusEl.textContent = `✅ ${file.name} uploaded`;
+
+        // Notify the bot via a message
+        if (webChatStore) {
+          webChatStore.dispatch({
+            type: 'WEB_CHAT/SEND_MESSAGE',
+            payload: { text: `I've uploaded a PPTX file: ${file.name} (blob: ${uploadedBlobName}). Please analyze it and help me improve or recreate it.` }
+          });
+        }
+
+        // Reset after 3s
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      } catch (err) {
+        statusEl.textContent = `❌ Upload failed: ${err.message}`;
+        console.error('Upload error:', err);
+      }
+    }
+
+    // ── Start ──────────────────────────────────────────────────────────────────
+    initWebChat();
+  </script>
+</body>
+</html>
